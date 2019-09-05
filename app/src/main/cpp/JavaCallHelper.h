@@ -1,0 +1,14 @@
+//
+// Created by zxh17 on 2019-09-03.
+//
+
+#ifndef XIAOHUIPLAYER_JAVACALLHELPER_H
+#define XIAOHUIPLAYER_JAVACALLHELPER_H
+
+
+class JavaCallHelper {
+
+};
+
+
+#endif //XIAOHUIPLAYER_JAVACALLHELPER_H
