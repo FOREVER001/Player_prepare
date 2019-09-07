@@ -10,7 +10,7 @@
 
 class AudioChannel : public BaseChannel{
 public:
-    AudioChannel();
+    AudioChannel(int id);
 
      ~AudioChannel();
 };

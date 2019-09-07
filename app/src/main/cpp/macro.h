@@ -14,4 +14,7 @@
 #define DELETE(object) if(object){delete object;object=0;}
 //定义日志打印宏函数
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "NEFFMPEG",__VA_ARGS__)
+//1.主线程 2.子线程
+#define THREAD_MAIN 1
+#define THREAD_CHILD 2
 #endif //XIAOHUIPLAYER_MACRO_H

@@ -6,7 +6,20 @@
 #define XIAOHUIPLAYER_JAVACALLHELPER_H
 
 
+#include <jni.h>
+#include "macro.h"
 class JavaCallHelper {
+public:
+    JavaCallHelper(JavaVM *javaVM,JNIEnv *env,  jobject instance_);
+    ~JavaCallHelper();
+
+    void onPrepared(int threadMode);
+
+private:
+        JavaVM *javaVM;
+        JNIEnv *env;
+       jobject instance;
+       jmethodID jmd_prepared;
 
 };
 
