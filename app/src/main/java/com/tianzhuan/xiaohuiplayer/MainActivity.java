@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
 //        checkPermission();
         mSurfaceView = findViewById(R.id.surfaceView);
         mPlayer = new NEPlayer();
+        mPlayer.setSurfaceView(mSurfaceView);
         mPlayer.setDataSource(new File(Environment.getExternalStorageDirectory() + File.separator + "demo.mp4").getAbsolutePath());
         mPlayer.setOnPreparedListener(new NEPlayer.OnPreparedListener() {
             @Override
@@ -40,6 +41,17 @@ public class MainActivity extends AppCompatActivity {
 
                 //播放，调用到native去
                 mPlayer.start();
+            }
+        });
+        mPlayer.setOnErrorListener(new NEPlayer.OnErrorListener() {
+            @Override
+            public void onError(final int errorCode) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, "出错了，错误码："+errorCode, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
     }

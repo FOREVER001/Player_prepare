@@ -14,7 +14,7 @@ extern "C" {
  */
 class BaseChannel {
 public:
-    BaseChannel(int id):id(id) {
+    BaseChannel(int id, AVCodecContext * codecContext):id(id),codecContext(codecContext) {
         packets.setReleaseCallback(releaseAVPacket);
         frames.setReleaseCallback(releaseAVFrame);
     }
@@ -54,6 +54,10 @@ public:
     SafeQueue <AVPacket *> packets;
     SafeQueue <AVFrame *> frames;
     int id;
+    bool  isPlaying;//是否正在读取
+
+    AVCodecContext * codecContext;
+
 };
 
 

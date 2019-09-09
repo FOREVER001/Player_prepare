@@ -52,12 +52,18 @@ void NEFFmpeg::_prepare() {
         LOGE("打开媒体失败：%s",av_err2str(ret));
 //        javaCallHelper jni回调java
     //可能java层需要根据errcode来更新UI
+        if(javaCallHelper){
+            javaCallHelper->onError(THREAD_CHILD,FFMPEG_CAN_NOT_OPEN_URL);
+        }
         return;
     }
     //2.查找媒体中音/视频流信息
    ret = avformat_find_stream_info(formatContext,0);
     if(ret<0){
         //TODO 作业
+        if(javaCallHelper){
+            javaCallHelper->onError(THREAD_CHILD,FFMPEG_CAN_NOT_FIND_STREAMS);
+        }
         return;
     }
     //遍历流
@@ -72,6 +78,9 @@ void NEFFmpeg::_prepare() {
         // 如果ffmpeg不支持某种编解码方式，所以需要判断
             if(!codec){
                 //TODO 作业
+                if(javaCallHelper){
+                    javaCallHelper->onError(THREAD_CHILD,FFMPEG_FIND_DECODER_FAIL);
+                }
                 return;
             }
             //6.创建解码器上下文
@@ -80,32 +89,43 @@ void NEFFmpeg::_prepare() {
            ret = avcodec_parameters_to_context(codecContext,codecparParamters);
            if(ret<0){
                //TODO 作业
+               if(javaCallHelper){
+                   javaCallHelper->onError(THREAD_CHILD,FFMPEG_CODEC_CONTEXT_PARAMETERS_FAIL);
+               }
                return;
            }
            //8.打开解码器
           ret =avcodec_open2(codecContext,codec,0);
         if(ret<0){
             //TODO 作业
+            if(javaCallHelper){
+                javaCallHelper->onError(THREAD_CHILD,FFMPEG_OPEN_DECODER_FAIL);
+            }
             return;
         }
 
         //判断流类型（音频还是视频？）
        if( codecparParamters->codec_type == AVMEDIA_TYPE_AUDIO){
             //AudioChannel
-            audioChannel=new AudioChannel(i);
+            audioChannel=new AudioChannel(i,codecContext);
        } else if( codecparParamters->codec_type == AVMEDIA_TYPE_VIDEO){
             //VideoChannel
-            videoChannel=new VideoChannel(i);
+            videoChannel=new VideoChannel(i,codecContext);
+           videoChannel->setRenderCallback(renderCallback);
        }
 
     }//end for
     if(!audioChannel && !videoChannel ){
         //既没有音频也没有视频
         //TODO,作业
+        if(javaCallHelper){
+            javaCallHelper->onError(THREAD_CHILD,FFMPEG_NOMEDIA);
+        }
         return;
     }
     //准备好了，通知java层。
     if(javaCallHelper){
+        LOGE("播放准备好了");
         javaCallHelper->onPrepared(THREAD_CHILD);
     }
 
@@ -126,6 +146,9 @@ void NEFFmpeg::prepare() {
  */
 void NEFFmpeg::start() {
     isPlaying=1;
+    if(videoChannel){
+        videoChannel->start();
+    }
     pthread_create(&pid_start,0,task_start,this);
 }
 /**
@@ -152,10 +175,19 @@ void NEFFmpeg::_start() {
        } else{
            //TODO 作业
            LOGE("没有音视频数据包失败");
+           if (javaCallHelper) {
+               javaCallHelper->onError(THREAD_CHILD, FFMPEG_READ_PACKETS_FAIL);
+           }
            break;
        }
 
     }//end while
     isPlaying=0;
     //停止解码播放（音频和视频）
+    videoChannel->stop();
+    audioChannel->stop();
+}
+
+void NEFFmpeg::setRenderCallback( RenderCallback renderCallback){
+    this->renderCallback=renderCallback;
 }

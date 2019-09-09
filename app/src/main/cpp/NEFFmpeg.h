@@ -26,6 +26,7 @@ public:
     void start();
 
     void _start();
+    void setRenderCallback( RenderCallback renderCallback);
 
 private:
     JavaCallHelper *javaCallHelper=0;
@@ -36,6 +37,7 @@ private:
     pthread_t pid_start;
     bool isPlaying;
     AVFormatContext *formatContext=0;
+    RenderCallback renderCallback;
 };
 
 

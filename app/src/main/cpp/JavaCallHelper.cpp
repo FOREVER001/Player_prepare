@@ -13,6 +13,7 @@ JavaCallHelper::JavaCallHelper(  JavaVM *javaVM,JNIEnv *env,  jobject instance_)
     this->instance=env->NewGlobalRef(instance_);//不能直接赋值
     jclass clazz = env->GetObjectClass(instance);
     this->jmd_prepared=env->GetMethodID(clazz,"onPrepared","()V");
+    this->jmd_onError=env->GetMethodID(clazz,"onError","(I)V");
 
 }
 JavaCallHelper::~JavaCallHelper(){
@@ -33,5 +34,20 @@ void JavaCallHelper::onPrepared(int threadMode) {
              env_chid->CallVoidMethod(instance,jmd_prepared);
             javaVM->DetachCurrentThread();
         }
+}
+
+void JavaCallHelper::onError(int threadMode, int errCode) {
+    if(threadMode == THREAD_MAIN){
+        //主线程
+        env->CallVoidMethod(instance,jmd_onError,errCode);
+    } else{
+        //子线程
+        // 不能用之前的env,需要拿到当前子线程的Env
+        JNIEnv *env_chid;
+        javaVM->AttachCurrentThread(&env_chid,0);
+        env_chid->CallVoidMethod(instance,jmd_onError,errCode);
+        javaVM->DetachCurrentThread();
+    }
+
 }
 
