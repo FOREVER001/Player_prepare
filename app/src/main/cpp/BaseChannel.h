@@ -5,16 +5,18 @@
 #ifndef XIAOHUIPLAYER_BASECHANNEL_H
 #define XIAOHUIPLAYER_BASECHANNEL_H
 extern "C" {
-    #include <libavcodec/avcodec.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/time.h>
 };
 
 #include "safe_queue.h"
+
 /**
  * VideoChannel和AudioChannel的父类
  */
 class BaseChannel {
 public:
-    BaseChannel(int id, AVCodecContext * codecContext):id(id),codecContext(codecContext) {
+    BaseChannel(int id, AVCodecContext *codecContext) : id(id), codecContext(codecContext) {
         packets.setReleaseCallback(releaseAVPacket);
         frames.setReleaseCallback(releaseAVFrame);
     }
@@ -29,10 +31,10 @@ public:
      * 释放AVPacket
      * @param packet T类型的指针，因为T是指针类型，所以这里的参数是二级指针
      */
-    static void releaseAVPacket(AVPacket **packet){
-        if(packet){
+    static void releaseAVPacket(AVPacket **packet) {
+        if (packet) {
             av_packet_free(packet);
-            *packet=0;
+            *packet = 0;
         }
     }
 
@@ -41,22 +43,24 @@ public:
      * 释放AVFrame
      * @param frame T类型的指针，因为T是指针类型，所以这里的参数是二级指针
      */
-    static void releaseAVFrame(AVFrame **frame){
-        if(frame){
+    static void releaseAVFrame(AVFrame **frame) {
+        if (frame) {
             av_frame_free(frame);
-            *frame=0;
+            *frame = 0;
         }
     }
 
     //纯虚函数（抽象函数）
     virtual void start() = 0;
-    virtual void stop() = 0;
-    SafeQueue <AVPacket *> packets;
-    SafeQueue <AVFrame *> frames;
-    int id;
-    bool  isPlaying;//是否正在读取
 
-    AVCodecContext * codecContext;
+    virtual void stop() = 0;
+
+    SafeQueue<AVPacket *> packets;
+    SafeQueue<AVFrame *> frames;
+    int id;
+    bool isPlaying;//是否正在读取
+
+    AVCodecContext *codecContext;
 
 };
 

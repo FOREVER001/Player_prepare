@@ -14,4 +14,5 @@ target_link_libraries(
         -Wl,--end-group
         z
         log
-        android)
+        android
+        OpenSLES)

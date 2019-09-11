@@ -110,8 +110,12 @@ void NEFFmpeg::_prepare() {
             audioChannel=new AudioChannel(i,codecContext);
        } else if( codecparParamters->codec_type == AVMEDIA_TYPE_VIDEO){
             //VideoChannel
-            videoChannel=new VideoChannel(i,codecContext);
-           videoChannel->setRenderCallback(renderCallback);
+            //帧率
+           AVRational  frame_rate= avStream->avg_frame_rate;
+//            int fps = frame_rate.num/frame_rate.den;
+            int fps=av_q2d(frame_rate);
+            videoChannel=new VideoChannel(i,codecContext,fps);
+            videoChannel->setRenderCallback(renderCallback);
        }
 
     }//end for
@@ -149,13 +153,24 @@ void NEFFmpeg::start() {
     if(videoChannel){
         videoChannel->start();
     }
+    if(audioChannel){
+        audioChannel->start();
+    }
     pthread_create(&pid_start,0,task_start,this);
 }
 /**
  *真正执行解码播放(循环解码)
  */
 void NEFFmpeg::_start() {
+    /**
+      * 内存泄漏点1
+      * 控制packets队列
+    */
     while (isPlaying){
+        if(videoChannel && videoChannel->packets.size() >100){
+            av_usleep(10*1000);
+            continue;
+        }
         AVPacket *packet=av_packet_alloc();
        int ret = av_read_frame(formatContext,packet);
        if(!ret){
@@ -163,7 +178,6 @@ void NEFFmpeg::_start() {
          if(videoChannel && packet->stream_index == videoChannel->id){
              //往视频编码数据包队列中添加数据
              videoChannel->packets.push(packet);
-
          } else  if(audioChannel && packet->stream_index == audioChannel->id){
              //往音频编码数据包队列中添加数据
              audioChannel->packets.push(packet);
