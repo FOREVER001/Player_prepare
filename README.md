@@ -1,2 +1,2 @@
-# Player_prepare
+# xiaoHuiPlayer
 xiaoHuiPlayer播放器项目框架搭建准备
