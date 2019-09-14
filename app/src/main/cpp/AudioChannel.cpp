@@ -5,7 +5,8 @@
 
 #include "AudioChannel.h"
 
-AudioChannel::AudioChannel(int id, AVCodecContext *codecContext) : BaseChannel(id, codecContext) {
+
+AudioChannel::AudioChannel(int id, AVCodecContext *codecContext,AVRational time_base) : BaseChannel(id, codecContext,time_base) {
    //缓冲区大小如何定？
     out_channels= av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
      out_sampleSize= av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
@@ -15,10 +16,19 @@ AudioChannel::AudioChannel(int id, AVCodecContext *codecContext) : BaseChannel(i
     out_buffers = static_cast<uint8_t *>(malloc(out_buffers_size));
     //out_buffer初始化
     memset(out_buffers,0,out_buffers_size);
+
+    swrContext=swr_alloc_set_opts(0,AV_CH_LAYOUT_STEREO,AV_SAMPLE_FMT_S16,out_sampleRate,
+                                              codecContext->channel_layout,codecContext->sample_fmt,codecContext->sample_rate,0,0);
+    //初始化重采样上下文
+    swr_init(swrContext);
 }
 
 AudioChannel::~AudioChannel() {
-
+    if(swrContext){
+        swr_free(&swrContext);
+        swrContext=0;
+    }
+    DELETE(out_buffers);
 }
 
 /**
@@ -222,10 +232,11 @@ void AudioChannel::video_play() {
  */
 int AudioChannel::getPCM() {
     int pcm_data_size=0;
-    SwrContext *swrContext=swr_alloc_set_opts(0,AV_CH_LAYOUT_STEREO,AV_SAMPLE_FMT_S16,out_sampleRate,
-            codecContext->channel_layout,codecContext->sample_fmt,codecContext->sample_rate,0,0);
-    //初始化重采样上下文
-    swr_init(swrContext);
+    //内存泄漏点
+//    SwrContext *swrContext=swr_alloc_set_opts(0,AV_CH_LAYOUT_STEREO,AV_SAMPLE_FMT_S16,out_sampleRate,
+//            codecContext->channel_layout,codecContext->sample_fmt,codecContext->sample_rate,0,0);
+//    //初始化重采样上下文
+//    swr_init(swrContext);
     AVFrame *frame=0;
     while (isPlaying) {
         int ret = frames.pop(frame);
@@ -258,7 +269,7 @@ int AudioChannel::getPCM() {
         /** @param s         allocated Swr context, with parameters set
         * @param out       output buffers, only the first one need be set in case of packed audio
          * @param out_count amount of space available for output in samples per channel
-        * @param in        input buffers, only the first one need to be set in case of packed audio
+        * @param in        input b..rst one need to be set in case of packed audio
         * @param in_count  number of input samples available in one channel
         *
          * @return number of samples output per channel, negative value on error
@@ -267,6 +278,8 @@ int AudioChannel::getPCM() {
                 (const uint8_t **)(frame->data), frame->nb_samples);
         //获取swr_convert转换后out_samples个 *2（16位）*2（s双声道）
         pcm_data_size=out_samples*out_sampleSize*out_channels;
+        //获取音频时间 audio_time需要被videoChannel获取
+        audio_time =frame->best_effort_timestamp *av_q2d(time_base);
         break;
     }// end while
     releaseAVFrame(&frame);

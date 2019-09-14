@@ -10,13 +10,14 @@
 // for native audio
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
+#include "macro.h"
 extern "C"{
     #include <libswresample/swresample.h>
 };
 
 class AudioChannel : public BaseChannel{
 public:
-    AudioChannel(int id,AVCodecContext *codecContext);
+    AudioChannel(int id,AVCodecContext *codecContext,AVRational time_base);
 
      ~AudioChannel();
     void start();
@@ -34,6 +35,7 @@ public:
     int out_buffers_size;
 
 private:
+    SwrContext *swrContext;
     pthread_t pid_audio_decode;
     pthread_t pid_audio_play;
     //引擎

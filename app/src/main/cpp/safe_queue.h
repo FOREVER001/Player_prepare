@@ -12,6 +12,7 @@ template <typename T>
 class SafeQueue {
 public:
     typedef void (*ReleaseCallback)(T *);
+    typedef void (*SyncHandle)(queue<T> &);
     SafeQueue() {
         pthread_mutex_init(&mutex,0);
         pthread_cond_init(&cond,0);
@@ -119,6 +120,19 @@ public:
     void setReleaseCallback(ReleaseCallback releaseCallback){
         this->releaseCallback=releaseCallback;
     }
+    void setSyncHandle(SyncHandle syncHandle){
+        this->syncHandle=syncHandle;
+    }
+    /**
+     * 同步操作
+     */
+    void sync(){
+        //先锁起来
+        pthread_mutex_lock(&mutex);
+        syncHandle(q);
+        //解锁
+        pthread_mutex_unlock(&mutex);
+    }
 private:
     queue<T> q;
     //互斥锁
@@ -126,5 +140,6 @@ private:
     pthread_cond_t cond;
     int work;//标记队列是否工作
     ReleaseCallback releaseCallback;
+    SyncHandle syncHandle;
 };
 #endif //XIAOHUIPLAYER_SAFE_QUEUE_H

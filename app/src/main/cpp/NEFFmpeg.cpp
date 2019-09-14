@@ -104,17 +104,18 @@ void NEFFmpeg::_prepare() {
             return;
         }
 
+        AVRational time_base = avStream->time_base;
         //判断流类型（音频还是视频？）
        if( codecparParamters->codec_type == AVMEDIA_TYPE_AUDIO){
             //AudioChannel
-            audioChannel=new AudioChannel(i,codecContext);
+            audioChannel=new AudioChannel(i,codecContext,time_base);
        } else if( codecparParamters->codec_type == AVMEDIA_TYPE_VIDEO){
             //VideoChannel
             //帧率
            AVRational  frame_rate= avStream->avg_frame_rate;
 //            int fps = frame_rate.num/frame_rate.den;
             int fps=av_q2d(frame_rate);
-            videoChannel=new VideoChannel(i,codecContext,fps);
+            videoChannel=new VideoChannel(i,codecContext,fps,time_base);
             videoChannel->setRenderCallback(renderCallback);
        }
 
@@ -152,6 +153,7 @@ void NEFFmpeg::start() {
     isPlaying=1;
     if(videoChannel){
         videoChannel->start();
+        videoChannel->setAudioChannel(audioChannel);
     }
     if(audioChannel){
         audioChannel->start();
