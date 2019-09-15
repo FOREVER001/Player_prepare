@@ -16,13 +16,14 @@ public:
     void onPrepared(int threadMode);
 
     void onError(int i, int i1);
-
+    void onProgress(int threadMode, int progress);
 private:
         JavaVM *javaVM;
         JNIEnv *env;
        jobject instance;
        jmethodID jmd_prepared;
        jmethodID jmd_onError;
+       jmethodID jmd_onProgress;
 
 };
 

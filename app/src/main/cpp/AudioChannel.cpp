@@ -6,7 +6,8 @@
 #include "AudioChannel.h"
 
 
-AudioChannel::AudioChannel(int id, AVCodecContext *codecContext,AVRational time_base) : BaseChannel(id, codecContext,time_base) {
+AudioChannel::AudioChannel(int id, AVCodecContext *codecContext, AVRational time_base,
+                           JavaCallHelper *javaCallHelper) : BaseChannel(id, codecContext, time_base,javaCallHelper) {
    //缓冲区大小如何定？
     out_channels= av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
      out_sampleSize= av_get_bytes_per_sample(AV_SAMPLE_FMT_S16);
@@ -65,9 +66,7 @@ void AudioChannel::start() {
     pthread_create(&pid_audio_play, 0, task_audio_play, this);
 }
 
-void AudioChannel::stop() {
 
-}
 
 /**
  * 音频解码
@@ -280,8 +279,53 @@ int AudioChannel::getPCM() {
         pcm_data_size=out_samples*out_sampleSize*out_channels;
         //获取音频时间 audio_time需要被videoChannel获取
         audio_time =frame->best_effort_timestamp *av_q2d(time_base);
+        if(javaCallHelper){
+            javaCallHelper->onProgress(THREAD_CHILD,audio_time);
+        }
         break;
     }// end while
     releaseAVFrame(&frame);
     return pcm_data_size;
+}
+/**
+ * 停止音频播放
+ */
+void AudioChannel::stop() {
+    isPlaying = 0;
+    javaCallHelper = 0;
+    //设置队列状态为非工作状态
+    packets.setWork(0);
+    frames.setWork(0);
+    pthread_join(pid_audio_decode,0);
+    pthread_join(pid_audio_play,0);
+    if(swrContext){
+        swr_free(&swrContext);
+        swrContext = 0;
+    }
+
+    /**
+     *7.释放
+     *
+     */
+     //7.1设置播放器状态为停止状态
+     if(bqPlayerPlay){
+         (*bqPlayerPlay)->SetPlayState(bqPlayerPlay, SL_PLAYSTATE_STOPPED);
+     }
+     //7.2销毁播放器
+    if(bqPlayerObject){
+        (*bqPlayerObject)->Destroy(bqPlayerObject);
+        bqPlayerObject = 0;
+        bqPlayerBufferQueue = 0;
+    }
+    //7.3 销毁混音器
+    if(outputMixObject){
+        (*outputMixObject)->Destroy(outputMixObject);
+        outputMixObject = 0;
+    }
+    //7.4 销毁引擎
+    if(engineObject){
+        (*engineObject)->Destroy(engineObject);
+        engineObject = 0;
+        engineInterface =0;
+    }
 }

@@ -10,13 +10,16 @@ extern "C" {
 };
 
 #include "safe_queue.h"
+#include "JavaCallHelper.h"
+
 
 /**
  * VideoChannel和AudioChannel的父类
  */
 class BaseChannel {
 public:
-    BaseChannel(int id, AVCodecContext *codecContext, AVRational time_base) : id(id), codecContext(codecContext) ,time_base(time_base){
+    BaseChannel(int id, AVCodecContext *codecContext, AVRational time_base,JavaCallHelper *javaCallHelper) : id(id),
+    codecContext(codecContext) ,time_base(time_base),javaCallHelper(javaCallHelper){
         packets.setReleaseCallback(releaseAVPacket);
         frames.setReleaseCallback(releaseAVFrame);
     }
@@ -24,6 +27,11 @@ public:
     virtual ~BaseChannel() {
         packets.clear();
         frames.clear();
+        if(codecContext){
+            avcodec_close(codecContext);
+            avcodec_free_context(&codecContext);
+            codecContext = 0;
+        }
     }
 
 
@@ -59,11 +67,11 @@ public:
     SafeQueue<AVFrame *> frames;
     int id;
     bool isPlaying;//是否正在读取
-
-    AVCodecContext *codecContext;//TODO   没释放
+    //解码器上下文
+    AVCodecContext *codecContext;
     AVRational time_base;
     double  audio_time;
-
+    JavaCallHelper *javaCallHelper = 0;
 };
 
 

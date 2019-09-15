@@ -11,13 +11,15 @@
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
 #include "macro.h"
+
 extern "C"{
     #include <libswresample/swresample.h>
 };
 
 class AudioChannel : public BaseChannel{
 public:
-    AudioChannel(int id,AVCodecContext *codecContext,AVRational time_base);
+    AudioChannel(int id, AVCodecContext *codecContext, AVRational time_base,
+                     JavaCallHelper *pHelper);
 
      ~AudioChannel();
     void start();
@@ -50,6 +52,7 @@ private:
     SLPlayItf bqPlayerPlay=0;
     //播放器队列接口
     SLAndroidSimpleBufferQueueItf bqPlayerBufferQueue=0;
+
 };
 
 

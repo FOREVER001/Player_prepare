@@ -34,6 +34,15 @@ public class NEPlayer implements SurfaceHolder.Callback {
 
     /**
      *供native反射调用
+     *
+     */
+    public void onProgress(int progress){
+        if(onProgressListener!=null){
+            onProgressListener.onProgress(progress);
+        }
+    }
+    /**
+     *供native反射调用
      * 表示播放器准备好了可以开始播放了
      */
     public void onPrepared(){
@@ -41,7 +50,6 @@ public class NEPlayer implements SurfaceHolder.Callback {
             mOnPreparedListener.onPrepared();
         }
     }
-
     /**
      * 供native反射调用
      * 表示出错了
@@ -54,20 +62,22 @@ public class NEPlayer implements SurfaceHolder.Callback {
     }
 
 
-    private native void prepareNative(String dataSource);
-    private native void startNative();
-    private native void setSurfaceNative(Surface surface);
+
 
     public void setOnPreparedListener(OnPreparedListener onPreparedListener) {
-        mOnPreparedListener = onPreparedListener;
+        this.mOnPreparedListener = onPreparedListener;
+    }
+    public void setOnProgressListener(OnProgressListener onProgressListener) {
+        this.onProgressListener = onProgressListener;
     }
 
     public void setOnErrorListener(OnErrorListener onErrorListener) {
-        mOnErrorListener = onErrorListener;
+        this.mOnErrorListener = onErrorListener;
     }
 
     private OnPreparedListener mOnPreparedListener;
     private OnErrorListener mOnErrorListener;
+    private OnProgressListener onProgressListener;
 
     public void setSurfaceView(SurfaceView surfaceView) {
         if(mSurfaceHolder!=null){
@@ -108,6 +118,43 @@ public class NEPlayer implements SurfaceHolder.Callback {
 
     }
 
+    /**
+     * 资源释放
+     */
+    public void release() {
+        mSurfaceHolder.removeCallback(this);
+        releaseNative();
+    }
+
+    /**
+     * 停止播放
+     */
+    public void stop() {
+        stopNative();
+    }
+
+    /**
+     * 获取总的播放时长
+     * @return
+     */
+    public int getDuration(){
+        return getDurationNative();
+    }
+
+    /**
+     * 播放进度跳转
+     * @param playProgress
+     */
+    public void seekTo(final int playProgress) {
+        new Thread(){
+            @Override
+            public void run() {
+                seekToNative(playProgress);
+            }
+        }.start();
+
+    }
+
 
     interface OnPreparedListener{
         void onPrepared();
@@ -115,4 +162,14 @@ public class NEPlayer implements SurfaceHolder.Callback {
     interface OnErrorListener{
         void onError(int errorCode);
     }
+    interface OnProgressListener{
+        void onProgress(int progress);
+    }
+    private native void prepareNative(String dataSource);
+    private native void startNative();
+    private native void setSurfaceNative(Surface surface);
+    private native void releaseNative();
+    private native void stopNative();
+    private native int getDurationNative();
+    private native void seekToNative(int playProgress);
 }

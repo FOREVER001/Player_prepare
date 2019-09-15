@@ -6,6 +6,8 @@
 
 
 #include "VideoChannel.h"
+
+
 /**
  * 丢包（AVPacket）
  */
@@ -34,7 +36,8 @@ void dropAVFrame(queue<AVFrame *> &q){
     }
 }
 
-VideoChannel::VideoChannel(int id,  AVCodecContext * codecContext,int fps,AVRational time_base):BaseChannel(id,codecContext,time_base) {
+VideoChannel::VideoChannel(int id, AVCodecContext *codecContext, int fps, AVRational time_base,
+                           JavaCallHelper *javaCallHelper) : BaseChannel(id, codecContext, time_base,javaCallHelper) {
     this->fps=fps;
     packets.setSyncHandle(dropAVPacket);
     frames.setSyncHandle(dropAVFrame);
@@ -75,9 +78,7 @@ void VideoChannel::start() {
     pthread_create(&pid_video_play,0,task_video_play,this);
 }
 
-void VideoChannel::stop() {
 
-}
 /**
  * 真正的视频解码
  * 从队列中循环的读packet
@@ -177,6 +178,9 @@ void VideoChannel::video_play() {
         if(!audioChannel){
             //没有音频(类似GIF)
             av_usleep(real_delay*1000000);
+            if(javaCallHelper){
+                javaCallHelper ->onProgress(THREAD_CHILD,video_time);
+            }
         } else{
             double  audio_time =   audioChannel->audio_time;
             //获取音视频播放的时间差
@@ -232,3 +236,15 @@ void VideoChannel::setRenderCallback(RenderCallback callback) {
 void VideoChannel::setAudioChannel(AudioChannel *audioChannel) {
     this->audioChannel=audioChannel;
 }
+
+void VideoChannel::stop() {
+    isPlaying=0;
+    javaCallHelper = 0;
+    //设置队列状态为非工作状态
+    packets.setWork(0);
+    frames.setWork(0);
+
+    pthread_join(pid_video_decode,0);
+    pthread_join(pid_video_play,0);
+}
+

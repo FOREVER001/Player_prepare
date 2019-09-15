@@ -89,3 +89,43 @@ Java_com_tianzhuan_xiaohuiplayer_NEPlayer_setSurfaceNative(JNIEnv *env, jobject 
     pthread_mutex_unlock(&mutex);
 
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_tianzhuan_xiaohuiplayer_NEPlayer_releaseNative(JNIEnv *env, jobject instance) {
+    pthread_mutex_lock(&mutex);
+        if(window){
+            //把老的释放
+            ANativeWindow_release(window);
+            window = 0;
+        }
+    pthread_mutex_unlock(&mutex);
+    DELETE(ffmpeg);
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_tianzhuan_xiaohuiplayer_NEPlayer_stopNative(JNIEnv *env, jobject instance) {
+    if(ffmpeg){
+        ffmpeg ->stop();
+    }
+
+}extern "C"
+JNIEXPORT jint JNICALL
+Java_com_tianzhuan_xiaohuiplayer_NEPlayer_getDurationNative(JNIEnv *env, jobject instance) {
+
+    if(ffmpeg){
+        return ffmpeg ->getDuration();
+    }
+    return 0;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_tianzhuan_xiaohuiplayer_NEPlayer_seekToNative(JNIEnv *env, jobject instance,
+                                                       jint playProgress) {
+    if(ffmpeg){
+         ffmpeg ->seekTo(playProgress);
+    }
+}
